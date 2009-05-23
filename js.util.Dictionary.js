@@ -134,5 +134,3 @@ js.util.Dictionary = new js.lang.Class()  ({
         });
     }
 });
-
-// js.lang.Namespace('js.util');

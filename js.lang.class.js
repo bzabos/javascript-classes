@@ -296,39 +296,6 @@ js.lang.Interface.__interfaceInvokedWithGlobal__ = function(c, args) {
     return (iface);
 };
 
-// Namespace
-// TODO: lazy-load these?!
-// TODO: avoid eval: js.lang.Namespace('js.lang.Class', {});
-// TODO: avoid eval: js.lang.Namespace('js.lang.Class', js.lang.Class);
-// js.lang.Namespace = function(/* namespace, namespace, ... */) {
-//     var namespace;
-//     for (var i = 0; i < arguments.length; i++) {
-//         namespace = eval(arguments[i]);
-//         namespace.__namespace__ = js.lang.Namespace.generateNamespace(arguments[i], namespace);
-//     }
-// };
-// 
-// js.lang.Namespace.__NAMESPACE_TEMPLATE__ = 'var {property}={namespace}.{property};';
-// 
-// js.lang.Namespace.generateNamespace = function(id, namespace) {
-//     var imports = '';
-//     var template = js.lang.Namespace.__NAMESPACE_TEMPLATE__
-//     .replace(/\{namespace\}/g, id);
-// 
-//     for (var p in namespace) {
-//         if (!namespace.hasOwnProperty(p) || (p === 'prototype')) {
-//             continue;
-//         }
-//         imports += template.replace(/\{property\}/g, p);
-//     }
-// 
-//     return (imports);
-// };
-
-// generate & cache namespaces
-// TODO: eval is slow; list manip?
-// js.lang.Namespace('js', 'js.settings', 'js.lang', 'js.lang.Class', 'js.lang.Interface', 'js.lang.Namespace');
-
 // initialize settings/preferences
 if (js.settings.globalClass) {
     Class = js.lang.Class;
