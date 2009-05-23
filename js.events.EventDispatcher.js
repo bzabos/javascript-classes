@@ -23,9 +23,10 @@ js.events.EventDispatcher = new js.lang.Class()  ({
     
     //  TODO: event-args is extended and optional params are added on a per-type basis
     //  TODO: add CancelBubble (return false?  or throw new js.events.EventDispatcher.Events.CancelEvent())
-    dispatchEvent : function( event, eventArgs )  {
+    dispatchEvent : function( evt, eventArgs )  {
         var dispatcher = this;
-        var eventHandle = 'handle$' + event;
+        var eventHandle = js.events.EventDispatcher.EVENT_HANDLE_PREFIX + 
+                js.events.EventDispatcher.EVENT_HANDLE_SEPARATOR + evt;
         
         this._eventListeners.iterate( function( k, listener )  {
             if( (listener instanceof Object) && (eventHandle in listener) )  {
@@ -33,4 +34,8 @@ js.events.EventDispatcher = new js.lang.Class()  ({
             }
         });
     }
+})
+.Static({
+    EVENT_HANDLE_PREFIX : 'handle',
+    EVENT_HANDLE_SEPARATOR : ':'
 });
