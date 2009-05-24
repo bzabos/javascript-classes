@@ -88,7 +88,7 @@ js.util.Dictionary = new js.lang.Class()  ({
     remove : function( key )  {
         var success = false;
         if( this._dictionary.hasOwnProperty( key ) )  {
-            delete( this._dictionary[ key ] );
+            success = delete( this._dictionary[ key ] );
             this._size--;
         }
         return( success );
