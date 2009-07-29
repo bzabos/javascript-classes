@@ -21,14 +21,14 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     containsValue : function( value )  {
-        var v;
+        var key;
         this.iterate(function( k, v )  {
             if( value === v )  {
-                v = value;
+                key = k;
                 return( true );
             }
         });
-        return( v !== undefined );
+        return( key !== undefined );
     },
     
     entrySet : function()  {
