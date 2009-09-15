@@ -78,7 +78,7 @@ js.settings.debug = true;
                 helper.generateSimpleObject(1, 2)
             ];
             
-            js.lang.Class.__merge__( a, mergers );
+            js.util.objectMergeAll( a, mergers );
             
             assertEquals( a.b, mergers[0].b, 'Ensure property (b) was copied.' );
             assertEquals( a.c, mergers[1].c, 'Ensure property (c) was copied.' );
@@ -94,7 +94,7 @@ js.settings.debug = true;
                 helper.generateSimpleObject(1, 1)
             ];
             
-            js.lang.Class.__merge__( a, mergers );
+            js.util.objectMergeAll( a, mergers );
             
             assertEquals( a.b, mergers[0].b, 'Ensure property (b) was copied and overrode prevous b.' );
         },
@@ -103,7 +103,7 @@ js.settings.debug = true;
             var a = helper.generateSimpleList(6);
             var b = helper.generateSimpleList(4, 1);
             
-            var containsAll = js.lang.Class.__arrayContainsAll__( a, b );
+            var containsAll = js.util.arrayContainsAll( a, b );
             
             assertTrue( containsAll, 'Ensure that a list of 6 contains all elements of a list of 4.' );
         },
@@ -113,8 +113,8 @@ js.settings.debug = true;
             var b = helper.generateSimpleList(4, 0);
             var c = helper.generateSimpleList(4, 2);
             
-            var containsAllFirst = js.lang.Class.__arrayContainsAll__( a, b );
-            var containsAllLast = js.lang.Class.__arrayContainsAll__( a, c );
+            var containsAllFirst = js.util.arrayContainsAll( a, b );
+            var containsAllLast = js.util.arrayContainsAll( a, c );
             
             assertTrue( containsAllFirst, 'Ensure that a list of 6 contains all elements of a list of 4 (first 4).' );
             assertTrue( containsAllLast, 'Ensure that a list of 6 contains all elements of a list of 4 (last 4).' );
@@ -124,7 +124,7 @@ js.settings.debug = true;
             var a = helper.generateSimpleList(1);
             var b = helper.generateSimpleList(1);
             
-            var containsAll = js.lang.Class.__arrayContainsAll__( a, b );
+            var containsAll = js.util.arrayContainsAll( a, b );
             
             assertTrue( containsAll, 'Ensure that a list of 1 contains all elements of a list of 1.' );
         },
@@ -133,18 +133,21 @@ js.settings.debug = true;
             var a = helper.generateSimpleList(1);
             var b = helper.generateSimpleList(1, 1);
             
-            var containsAll = js.lang.Class.__arrayContainsAll__( a, b );
+            var containsAll = js.util.arrayContainsAll( a, b );
             
             assertFalse( containsAll, 'Ensure that contains-all will fail if lists differ.' );
         },
         
         testInitStaticInvocationThrowsTypeError : function()  {
+            var error;
             try  {
                 js.lang.Class.__init__();
             }
             catch(e)  {
-                assertTrue((e instanceof TypeError), 'Ensure calling __init__ statically throws TypeError');
+                error = e;
             }
+            
+            assertTrue((error instanceof TypeError), 'Ensure calling __init__ statically throws TypeError');
         },
         
         testInitInstanceInvocationCalls__init__WithAllArgs : function()  {
@@ -169,7 +172,7 @@ js.settings.debug = true;
             var called = false;
             var caller = function()  { called = true; };
             
-            js.lang.Class.__invoke__( null, caller );
+            js.lang.Class.invokeIfExists( null, caller );
             
             assertTrue( called, 'Ensure caller got invoked.' );
         },
@@ -179,13 +182,13 @@ js.settings.debug = true;
             var args = helper.generateSimpleList(9);
             var caller = function()  { argsLength = arguments.length; }
             
-            js.lang.Class.__invoke__( null, caller, args );
+            js.lang.Class.invokeIfExists( null, caller, args );
             
             assertEquals( args.length, argsLength, 'Ensure caller got invoked with args.' );
         },
         
         testInvokeDoesntFailIfFalsyValuePassed : function()  {
-            js.lang.Class.__invoke__();
+            js.lang.Class.invokeIfExists();
             assertTrue( true, 'Ensure invoke doesnt fail if falsy value passed.' );
         },
         
@@ -207,22 +210,21 @@ js.settings.debug = true;
             js.lang.Class.__constructor__.call( a, A );
             
             assertEquals( A, a.constructor, 'Ensure the constructor property gets set within the constructor method.' );
-            
         },
         
         testGeneratedClassReturnsValueFromGlobalContext : function()  {
-            
+            throw('Not Implemented.');
         },
         
         testGeneratecClassBindsStaticInitToClass : function()  {
-            var A = js.lang.Class.__generateClass__();
+            var A = js.lang.Class.generateClass();
             
             var containsInit = ( ('__init__' in A) && (A.__init__ instanceof Function) );
             assertTrue( containsInit, 'Ensure __init__ gets statically bound to the generated class.' );
         },
         
         testGeneratecClassesStaticInitIsCallableAndFailsSilently : function()  {
-            var A = js.lang.Class.__generateClass__();
+            var A = js.lang.Class.generateClass();
             
             A.__init__.call({});
             
@@ -233,7 +235,7 @@ js.settings.debug = true;
             var A = function(){};
             var B = function(){};
             
-            js.lang.Class.__extend__( B, [ A ] );
+            js.lang.Class.extend( B, [ A ] );
             
             var b = new B();
             
@@ -265,7 +267,7 @@ js.settings.debug = true;
             
             var D = function(){};
             
-            js.lang.Class.__extend__( D, [ A, B, C ] );
+            js.lang.Class.extend( D, [ A, B, C ] );
             
             var containsAll = helper.objectContainsAll( D.prototype, [ A.prototype, B.prototype, C.prototype ] );
             assertTrue( containsAll, 'Ensure D.prototype now contains all properties in [A,B,C].prototype.' );
@@ -356,14 +358,14 @@ js.settings.debug = true;
         },
         
         testGenerateStub : function()  {
-            var stub = js.lang.Interface.__generateStub__( 'name', ['param1', 'param2']);
+            var stub = js.lang.Interface.generateStub( 'name', ['param1', 'param2']);
             
             try  {
                 stub();
             }
             catch(e)  {
                 assertTrue( (e instanceof ReferenceError), 'Ensure the stub throws a reference-error.' );
-                assertEquals( stub.__message__, e.message, 'Ensure the error is the reference-error were looking for.' );
+                assertEquals( stub.__message, e.message, 'Ensure the error is the reference-error were looking for.' );
             }
         },
         
@@ -371,7 +373,7 @@ js.settings.debug = true;
             var name = 'name';
             var param = 'param1';
             
-            var msg = js.lang.Interface.__generateStubMessage__( 'name', ['param1'] );
+            var msg = js.lang.Interface.generateStubMessage( 'name', ['param1'] );
             
             assertTrue( (msg.indexOf('name') > -1), 'Ensure the name of the method is being inserted appropriately into the message.' );
             assertTrue( (msg.indexOf(param) > -1), 'Ensure the parameter of the method is being insterted appropriately into the message.' );
@@ -385,7 +387,7 @@ js.settings.debug = true;
                 c : ['c']
             };
             
-            js.lang.Interface.__generateStubs__( stubs );
+            js.lang.Interface.generateStubs( stubs );
             
             assertTrue( (stubs.a instanceof Function), 'Ensure a was converted to a stub.' );
             assertTrue( (stubs.b instanceof Function), 'Ensure b was converted to a stub.' );
@@ -408,7 +410,7 @@ js.settings.debug = true;
                 })
             ];
             
-            js.lang.Interface.__bindStubs__( A, interfaces );
+            js.lang.Interface.bindStubs( A, interfaces );
             
             assertEquals( a, A.prototype.a, 'Ensure existing methods, etc. are not overriden by stubs.' );
             assertTrue( (A.prototype.d instanceof Function), 'Ensure multiple properties get copied.' );
@@ -453,12 +455,13 @@ js.settings.debug = true;
             
             var b = new B();
             
+            // TODO: these tests should not be running assertions within the catch! They're conditionally run assertions!
             try  {
                 b.a();
             }
             catch(e)  {
                 assertTrue( (e instanceof ReferenceError), 'Ensure the stub throws a reference-error.' );
-                assertEquals( b.a.__message__, e.message, 'Ensure the error is the reference-error were looking for.' );
+                assertEquals( b.a.__message, e.message, 'Ensure the error is the reference-error were looking for.' );
             }
             
             try  {
@@ -466,7 +469,7 @@ js.settings.debug = true;
             }
             catch(e)  {
                 assertTrue( (e instanceof ReferenceError), 'Ensure the stub throws a reference-error.' );
-                assertEquals( b.b.__message__, e.message, 'Ensure the error is the reference-error were looking for.' );
+                assertEquals( b.b.__message, e.message, 'Ensure the error is the reference-error were looking for.' );
             }
         }
     });

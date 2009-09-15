@@ -4,25 +4,61 @@ if (! ('js' in this)) {
     this.js = {};
 }
 
-// global logger
-js.log = function(msg) {
-    js.log.__appendLog__(msg);
+js.util = (js.util || {});
 
-    if (js.settings.debug) {
-        js.log.__logger__(msg);
+js.util.arrayContainsAll = function(a, b) {
+    /** Checks if a is a list of the same objects as b. **/
+    for (var contains = 0, i = 0; i < b.length; i++) {
+        for (var j = 0; j < a.length; j++) {
+            if (a[j] === b[i]) {
+                contains++;
+                break;
+            }
+        }
+
+        if (contains < i) {
+            return (false);
+        }
+    }
+
+    return (contains === b.length);
+};
+
+js.util.objectMergeAll = function(dest, srcs) {
+    /** Merges all properties of each object in sources (srcs) to destination (dest). **/
+    for (var src, p, i = (srcs.length - 1); i >= 0; i--) {
+        src = srcs[i];
+
+        for (p in src) {
+            if (!src.hasOwnProperty(p)) {
+                continue;
+            }
+            dest[p] = src[p];
+        }
     }
 };
 
-js.log.__logItems__ = [];
 
-js.log.__appendLog__ = function(msg) {
+
+// global logger
+js.log = function(msg) {
+    js.log.appendLog(msg);
+
+    if (js.settings.debug) {
+        js.log._logger(msg);
+    }
+};
+
+js.log._logItems = [];
+
+js.log.appendLog = function(msg) {
     var logItem = {};
     logItem[String(new Date())] = String(msg);
 
-    js.log.__logItems__.push(logItem);
+    js.log._logItems.push(logItem);
 };
 
-js.log.__logger__ = (function(console, print) {
+js.log._logger = (function(console, print) {
     if ((console !== undefined) && ('log' in console)) {
         return (function(msg) {
             console.log(msg);
@@ -34,7 +70,6 @@ js.log.__logger__ = (function(console, print) {
     return (function() {});
 })(this.console, this.print);
 
-// js.lang namespace
 js.lang = (js.lang || {});
 
 // reference to global context (in a browser: window)
@@ -44,8 +79,8 @@ js.lang.GlobalContext = (function() {
 
 // consumer settings/preferences
 js.settings = {
-    debug: (js.lang.GlobalContext.JS_DEBUG || false),
-    globalClass: (js.lang.GlobalContext.JS_GLOBAL_CLASS || false),
+    debug:           (js.lang.GlobalContext.JS_DEBUG            || false),
+    globalClass:     (js.lang.GlobalContext.JS_GLOBAL_CLASS     || false),
     globalInterface: (js.lang.GlobalContext.JS_GLOBAL_INTERFACE || false),
     globalNamespace: (js.lang.GlobalContext.JS_GLOBAL_NAMESPACE || false)
 };
@@ -56,20 +91,18 @@ try {
     delete(js.lang.GlobalContext.JS_GLOBAL_CLASS);
     delete(js.lang.GlobalContext.JS_GLOBAL_INTERFACE);
     delete(js.lang.GlobalContext.JS_GLOBAL_NAMESPACE);
-} catch(e) {}
+} catch(e) {/* do nothing. */}
 
 // prototype munging
 // TODO: inheritance with static members?
 Function.prototype.Static = function(methods) {
-    js.lang.Class.__merge__(this, [methods]);
+    js.util.objectMergeAll(this, [methods]);
     return (this);
 };
 
-Function.prototype.Implements = function(
-/* Interface, Interface, ... */
-) {
+Function.prototype.Implements = function(/* Interface, Interface, ... */) {
     this.__implements__ =
-    ((this.prototype && this.prototype.constructor && this.prototype.constructor.__implements__) || []).slice();
+        ((this.prototype && this.prototype.constructor && this.prototype.constructor.__implements__) || []).slice();
 
     // TODO: __implements__ needs to be unique. (set(this.__implements__, arguments))
     Array.prototype.push.apply(this.__implements__, arguments);
@@ -77,27 +110,23 @@ Function.prototype.Implements = function(
     return (this);
 };
 
-Function.prototype.enforces = function(
-/* Interface, Interface, ... */
-) {
-    return (js.lang.Class.__arrayContainsAll__(this.__implements__, arguments));
+Function.prototype.enforces = function(/* Interface, Interface, ... */) {
+    return (js.util.arrayContainsAll(this.__implements__, arguments));
 };
 
 // Class
-js.lang.Class = function(
-/* Parent, Parent, ... */
-) {
-    var c = js.lang.Class.__generateClass__(js.lang.Class.__classInvokedWithGlobal__);
-    js.lang.Class.__extend__(c, Array.apply([], arguments));
+js.lang.Class = function(/* Parent, Parent, ... */) {
+    var c = js.lang.Class.generateClass(js.lang.Class.classInvokedWithGlobal);
+    js.lang.Class.extend(c, Array.apply([], arguments));
 
     return (c);
 };
 
-js.lang.Class.__STATIC_INIT_INVOKED_WITH_GLOBAL__ = 'Static method __init__ requires a context. nie: Parent.__init__.call( this );';
-js.lang.Class.__CLASS_INSTANTIATED_WITHOUT_BODY__ = 'Class requires a class body. ie:\nA = new Class()  ({\n\t__init__ : function()  {}\n});';
-js.lang.Class.__extending__ = false;
+js.lang.Class.STATIC_INIT_INVOKED_WITH_GLOBAL = 'Static method __init__ requires a context. nie: Parent.__init__.call( this );';
+js.lang.Class.CLASS_INSTANTIATED_WITHOUT_BODY = 'Class requires a class body. ie:\nA = new Class()  ({\n\t__init__ : function()  {}\n});';
+js.lang.Class._extending = false;
 
-js.lang.Class.__generateClass__ = function(globalContextCallback) {
+js.lang.Class.generateClass = function(globalContextCallback) {
     var c = function() {
         return (js.lang.Class.__constructor__.call(this, c, globalContextCallback, arguments));
     };
@@ -115,40 +144,40 @@ js.lang.Class.__constructor__ = function(c, globalContextCallback, args) {
     }
 
     if (!c.__initialized__) {
-        throw new ReferenceError(js.lang.Class.__CLASS_INSTANTIATED_WITHOUT_BODY__);
+        throw new ReferenceError(js.lang.Class.CLASS_INSTANTIATED_WITHOUT_BODY);
     }
 
     this.constructor = c;
 
-    if (js.lang.Class.__extending__ || !c.prototype.hasOwnProperty('__init__')) {
+    if (js.lang.Class._extending || !c.prototype.hasOwnProperty('__init__')) {
         return (undefined);
     }
 
-    return (js.lang.Class.__invoke__(this, this.__init__, args));
+    return (js.lang.Class.invokeIfExists(this, this.__init__, args));
 };
 
 js.lang.Class.__init__ = function(c, args) {
     if (this instanceof Function) {
-        throw new TypeError(js.lang.Class.__STATIC_INIT_INVOKED_WITH_GLOBAL__);
+        throw new TypeError(js.lang.Class.STATIC_INIT_INVOKED_WITH_GLOBAL);
     }
 
-    return (js.lang.Class.__invoke__(this, c.prototype.__init__, args));
+    return (js.lang.Class.invokeIfExists(this, c.prototype.__init__, args));
 };
 
 // TODO: extendClasses
-js.lang.Class.__extend__ = function(c, parents) {
+js.lang.Class.extend = function(c, parents) {
     var parent = (parents[0] || Object);
 
-    js.lang.Class.__extending__ = true;
+    js.lang.Class._extending = true;
     try {
         c.prototype = new parent();
     }
     finally {
-        js.lang.Class.__extending__ = false;
+        js.lang.Class._extending = false;
     }
 
     if (parents.length > 1) {
-        js.lang.Class.__mergePrototypes__(c, parents);
+        js.lang.Class.mergePrototypes(c, parents);
     }
 
     c.prototype.constructor = parent;
@@ -158,66 +187,35 @@ js.lang.Class.__extend__ = function(c, parents) {
     }
 };
 
-js.lang.Class.__extendObjects__ = function(c, parents) {
-    // TODO: this is repeated three times.. extract into generic extend?
+js.lang.Class.extendObjects = function(c, parents) {
+    // TODO: this is repeated three times.. extract into generic extend!
     c.prototype = (parents[0] || {});
 
     if (parents.length > 1) {
-        js.lang.Class.__merge__(c.prototype, parents);
+        js.util.objectMergeAll(c.prototype, parents);
     }
 };
 
-js.lang.Class.__invoke__ = function(context, func, args) {
+js.lang.Class.invokeIfExists = function(context, func, args) {
     if ((typeof(func) !== 'undefined') && (func.constructor === Function)) {
         return (func.apply(context, (args || [])));
     }
     return (undefined);
 };
 
-js.lang.Class.__mergePrototypes__ = function(c, parents) {
+js.lang.Class.mergePrototypes = function(c, parents) {
     for (var i = 0; i < parents.length; i++) {
         parents[i] = parents[i].prototype;
     }
 
-    js.lang.Class.__merge__(c.prototype, parents);
+    js.util.objectMergeAll(c.prototype, parents);
 };
 
-// TODO: mergeAll ?
-js.lang.Class.__merge__ = function(dest, srcs) {
-    for (var src, p, i = (srcs.length - 1); i >= 0; i--) {
-        src = srcs[i];
-
-        for (p in src) {
-            if (!src.hasOwnProperty(p)) {
-                continue;
-            }
-            dest[p] = src[p];
-        }
-    }
-};
-
-js.lang.Class.__arrayContainsAll__ = function(a, b) {
-    for (var contains = 0, i = 0; i < b.length; i++) {
-        for (var j = 0; j < a.length; j++) {
-            if (a[j] === b[i]) {
-                contains++;
-                break;
-            }
-        }
-
-        if (contains < i) {
-            return (false);
-        }
-    }
-
-    return (contains === b.length);
-};
-
-js.lang.Class.__classInvokedWithGlobal__ = function(c, parents) {
-    js.lang.Class.__merge__(c.prototype, parents);
+js.lang.Class.classInvokedWithGlobal = function(c, parents) {
+    js.util.objectMergeAll(c.prototype, parents);
 
     if ('__implements__' in c) {
-        js.lang.Interface.__bindStubs__(c, c.__implements__);
+        js.lang.Interface.bindStubs(c, c.__implements__);
     }
 
     c.__initialized__ = true;
@@ -227,18 +225,16 @@ js.lang.Class.__classInvokedWithGlobal__ = function(c, parents) {
 
 
 // Interface
-js.lang.Interface = function(
-/* Parent, Parent, ... */
-) {
-    var c = js.lang.Class.__generateClass__(js.lang.Interface.__interfaceInvokedWithGlobal__);
-    js.lang.Class.__extendObjects__(c, Array.apply([], arguments));
+js.lang.Interface = function(/* Parent, Parent, ... */) {
+    var c = js.lang.Class.generateClass(js.lang.Interface.interfaceInvokedWithGlobal);
+    js.lang.Class.extendObjects(c, Array.apply([], arguments));
     return (c);
 };
 
-js.lang.Interface.__METHOD_NOT_IMPLEMENTED__ = "Method '{name}' not implemented; desired signature: {name}({parameters}).";
+js.lang.Interface.METHOD_NOT_IMPLEMENTED = "Method '{name}' not implemented; desired signature: {name}({parameters}).";
 
 // TODO: bindStubsAll?
-js.lang.Interface.__bindStubs__ = function(c, interfaces) {
+js.lang.Interface.bindStubs = function(c, interfaces) {
     var proto = c.prototype;
 
     for (var i = 0, s, stubs; i < interfaces.length; i++) {
@@ -249,48 +245,48 @@ js.lang.Interface.__bindStubs__ = function(c, interfaces) {
                 continue;
             }
 
-            js.log(stubs[s].__message__);
+            js.log(stubs[s].__message);
             proto[s] = stubs[s];
         }
     }
 };
 
 // TODO: generateStubsAll?
-js.lang.Interface.__generateStubs__ = function(stubs) {
+js.lang.Interface.generateStubs = function(stubs) {
     for (var s in stubs) {
         if (!stubs.hasOwnProperty(s)) {
             continue;
         }
-        stubs[s] = js.lang.Interface.__generateStub__(s, stubs[s]);
+        stubs[s] = js.lang.Interface.generateStub(s, stubs[s]);
     }
 
     return (stubs);
 };
 
-js.lang.Interface.__generateStub__ = function(name, parameters) {
+js.lang.Interface.generateStub = function(name, parameters) {
     var stub = function() {
-        throw new ReferenceError(stub.__message__);
+        throw new ReferenceError(stub.__message);
     };
 
-    stub.__message__ = js.lang.Interface.__generateStubMessage__(name, parameters);
-    stub.__parameters__ = parameters;
+    stub.__message = js.lang.Interface.generateStubMessage(name, parameters);
+    stub.__parameters = parameters;
 
     return (stub);
 };
 
-js.lang.Interface.__generateStubMessage__ = function(name, parameters) {
-    return (js.lang.Interface.__METHOD_NOT_IMPLEMENTED__
+js.lang.Interface.generateStubMessage = function(name, parameters) {
+    return (js.lang.Interface.METHOD_NOT_IMPLEMENTED
     .replace(/\{name\}/g, name)
     .replace(/\{parameters\}/g, (parameters || []).join(', ')));
 };
 
-js.lang.Interface.__interfaceInvokedWithGlobal__ = function(c, args) {
+js.lang.Interface.interfaceInvokedWithGlobal = function(c, args) {
     c.__initialized__ = true;
 
     var iface = new c();
 
     var stubs = {};
-    js.lang.Class.__merge__(stubs, [js.lang.Interface.__generateStubs__(args[0]), iface._stubs]);
+    js.util.objectMergeAll(stubs, [js.lang.Interface.generateStubs(args[0]), iface._stubs]);
     iface._stubs = stubs;
 
     return (iface);
@@ -303,8 +299,4 @@ if (js.settings.globalClass) {
 
 if (js.settings.globalInterface) {
     Interface = js.lang.Interface;
-}
-
-if (js.settings.globalNamespace) {
-    Namespace = js.lang.Namespace;
 }
