@@ -55,8 +55,8 @@ js.log._logItems = [];
 js.log.appendLog = function(msg) {
     /** Append an object representing a log-item to the log. **/
     var logItem = {
-            message :   String(msg),
-            timestamp : String(new Date())
+            timestamp : Number(new Date()),
+            message :   String(msg)
         };
 
     js.log._logItems.push(logItem);
