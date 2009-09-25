@@ -1,10 +1,12 @@
 js.util = (js.util || {});
 
-// Dictionary
 js.util.Dictionary = new js.lang.Class()  ({
+    /** Utility class providing common java-like dictionary functionality to help keep code D-R-Y. **/
     __init__ : function( map )  {
+        /** Initializer for Dictionary **/
         this.clear();
-        // be very careful when using the constructor as a wrapper for an existing dictionary; 
+        
+        // NOTE: be very careful when using the constructor as a wrapper for an existing dictionary; 
         //   this action iterates the entire dictionary.
         if( map )  {
             this.putAll( map );
@@ -12,15 +14,18 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     clear : function()  {
+        /** Clear contents of this dict. **/
         this._size = 0;
         this._dictionary = {};
     },
 
     containsKey : function( key )  {
+        /** Check if given key exists in this dict. **/
         return( this._dictionary.hasOwnProperty( key ) );
     },
     
     containsValue : function( value )  {
+        /** Check if given value exists in this dict. **/
         var key;
         this.iterate(function( k, v )  {
             if( value === v )  {
@@ -32,6 +37,7 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     entrySet : function()  {
+        /** Retrieve a unique list of values from this dict. **/
         var items = [];
         //  acquire entries
         this.iterate(function( k, v )  {
@@ -41,14 +47,17 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     get : function( key )  {
+        /** Retrieve value associated with given key. **/
         return( this._dictionary[ key ] );
     },
     
     isEmpty : function()  {
+        /** Check if this dict contains zero elements. **/
         return( this.size() === 0 );
     },
     
     keySet  : function()  {
+        /** Retrieve a unique list of keys from this dict. **/
         var keys = [];
         //  acquire entries
         this.iterate( function( k, v )  {
@@ -58,6 +67,7 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     put : function( key, value )  {
+        /** Assign given value to given key within this dict. **/
         if( ! this._dictionary.hasOwnProperty( key ) )  {
             this._size++;
         }
@@ -68,6 +78,7 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     putAll : function( map )  {
+        /** Assign every value within given map to their associated keys, within this dict. **/
         var that = this;
         map.iterate( function( k, v )  {
             that.put( k, v );
@@ -75,6 +86,8 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     iterate : function( callback )  {
+        /** Convenient, unified method of iterating elements in this dict.
+            This pattern is common to all collection classes. **/
         var dictionary = this._dictionary;
         for( var property in dictionary )  {
             if( ! dictionary.hasOwnProperty( property ) )  { continue; }
@@ -86,6 +99,7 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
 
     remove : function( key )  {
+        /** Remove key from this dict. **/
         var success = false;
         if( this._dictionary.hasOwnProperty( key ) )  {
             success = delete( this._dictionary[ key ] );
@@ -95,10 +109,12 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     size : function()  {
+        /** Retrieve the size of this dict. **/
         return( this._size );
     },
     
     values : function()  {
+        /** Retrieve a list of all values within this dict. **/
         var values = [];
         for( var key in this._dictionary )  {
             if( ! this._dictionary.hasOwnProperty( key ) )  { continue; }
@@ -109,6 +125,7 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     clone : function()  {
+        /** Retrieve a deep-clone (if values implement a clone method), of this dict. **/
         var dictionary = new js.util.Dictionary();
         this.iterate( function( k, v )  {
             dictionary.put( k, (v && (v.clone instanceof Function) ? v.clone() : v) );
@@ -117,16 +134,21 @@ js.util.Dictionary = new js.lang.Class()  ({
     },
     
     toDict : function()  {
+        /** Retrieve a deep-clone (if values implement a clone method), of 
+            this dict as an Object rather than a Dictionary. **/
         return( this.clone()._dictionary );
     }
 })
 .Static({
     Iterate : function( dictionary, callback )  {
+        /** Iterate given dict, invoking given callback for each element.
+            Helper method to avoid the requirement to instantiate this class for one-off use-cases. **/
         js.util.Dictionary.prototype.iterate.call( { _dictionary : dictionary }, callback );
     },
     
-    // TODO: implement full iterator capabilities.
     Iterator : function( dictionary )  {
+        /** Retrieve an object which contains an 'iterate' method to be invoked at a later date. **/
+        // TODO: implement full iterator capabilities.
         return({
             iterate : function( callback )  {
                 js.util.Dictionary.prototype.iterate.call( { _dictionary : dictionary }, callback );
