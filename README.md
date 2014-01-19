@@ -1,5 +1,4 @@
-=JavascriptClasses v1.0 has been released!=
-Check out the [http://code.google.com/p/javascript-classes/downloads/list downloads] page to try it out now! Or just [http://code.google.com/p/javascript-classes/source/browse/#svn/trunk browse] the source online.
+# JavascriptClasses v1.0 has been released! 
 
 This framework provides the ability to elegantly write javascript classes, with full capabilities of deep hierarchies, including interfaces, and multiple inheritance with familiar syntax.
 
